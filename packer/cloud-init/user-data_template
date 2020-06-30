@@ -1,0 +1,16 @@
+#cloud-config
+
+## The file 'user-data_template' overwrites 'user-data' with the actual public key.
+## Modify user-data_template or changes will be lost.
+
+users:
+  - name: packer
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    shell: /bin/bash
+    lock_passwd: false
+    ssh-authorized-keys:
+      - ${id_rsa.pub}
+
+ssh_pwauth: false
+disable_root: true

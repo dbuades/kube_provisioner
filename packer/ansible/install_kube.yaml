@@ -1,0 +1,109 @@
+---
+
+# Each first level is a play from the playbook.
+# The purpose of a play is to map a selection of hosts to tasks.
+
+- name: Create base image with Kubernetes using Docker as CRI 
+  hosts: all
+  remote_user: packer
+  become: yes
+
+  tasks:
+  - name: Install basic required packages
+    apt:
+      update_cache: yes
+      name:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg2
+        - software-properties-common
+      state: present
+ 
+  ## Docker section
+  - name: Add Docker key
+    apt_key:
+      url: "https://download.docker.com/linux/ubuntu/gpg"
+      state: present
+
+  - name: Add Docker repository for Ubuntu Focal
+    apt_repository:
+      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+      state: present
+      update_cache: yes
+
+  - name: Install Docker
+    apt:
+      name:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+      state: present
+  
+  - name: Set up Docker for Kubernetes
+    copy:
+      src: "./files/daemon.json"
+      dest: "/etc/docker/daemon.json"
+  
+  - name: Create systemd service
+    file:
+      path: "/etc/systemd/system/docker.service.d"
+      state: directory
+  
+  - name: Enable systemd service
+    systemd:
+      name: docker
+      daemon-reload: yes
+      state: restarted
+      enabled: yes
+
+  ## Kubernetes section
+  - name: Diable swap if it is enabled
+    shell:
+      cmd: swapoff -a
+  
+  - name: Remove swapfile from fstab
+    replace:
+      path: /etc/fstab
+      regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+      replace: '# \1'
+
+  - name: Make sure that br_netfilter is loaded
+    modprobe:
+      name: br_netfilter
+      state: present
+  
+  - name: Add k8s.conf to sysctl
+    sysctl:
+      sysctl_file: /etc/sysctl.d/k8s.conf
+      name: '{{ item.key }}'
+      value: '{{ item.value }}'
+      state: present
+      reload: yes
+    loop:
+      - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+      - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+
+  - name: Add Kubernetes key
+    apt_key:
+      url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+      state: present
+
+  - name: Add Kubernetes repository for the appropiate Ubuntu release
+    apt_repository:
+      repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+      state: present
+      update_cache: yes
+  
+  - name: Install Kube
+    apt:
+      name:
+        - kubelet
+        - kubeadm
+        - kubectl
+      state: present
+
+  # There is a dpkg_selection module but this is clearer
+  - name: Hold packages so they are not auto-updated
+    shell: 
+      cmd: "apt-mark hold kubelet kubeadm kubectl"

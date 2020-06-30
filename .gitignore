@@ -1,0 +1,17 @@
+# SSH Keys
+packer/.ssh
+terraform/.ssh
+
+# Packer parsed SSH key
+packer/cloud-init/user-data
+
+# kubeadm encrypted join command
+terraform/ansible/join_command
+
+# Packer artifacts
+packer/output
+packer/packer_cache
+
+# Terraform artifacts
+terraform/.terraform
+*tfstate*

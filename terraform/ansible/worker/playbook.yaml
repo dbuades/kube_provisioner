@@ -1,0 +1,18 @@
+---
+# Join worker nodes to kubeadm cluster
+
+- name: Join worker nodes to kubeadm-created k8s cluster
+  hosts: all
+  remote_user: ubuntu
+  become: yes
+
+  tasks:
+  - name: Copy the join command to server location
+    copy:
+      src: "../join_command"
+      dest: "/tmp/join_command.sh"
+      mode: 0777
+
+  - name: Join the node to cluster
+    shell:
+      cmd: "sh /tmp/join_command.sh"

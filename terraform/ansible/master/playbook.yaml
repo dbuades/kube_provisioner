@@ -1,0 +1,59 @@
+---
+# Initialize master node with kubeadm and deploy the network layer
+
+- name: Initialize kubeadm master node
+  hosts: all
+  remote_user: ubuntu
+  become: yes
+
+  tasks:
+  - name: Check if kubeadm has already been initialized
+    stat:
+      path: "/etc/kubernetes/manifests/kube-apiserver.yaml"
+    register: kubeadm_initialized
+
+  - name: Initialize and configure kubeadm
+    block:
+      - name: Initialize kubeadm
+        shell:
+          cmd: "kubeadm init --control-plane-endpoint {{ lookup('env','NODE_IP') }}"
+
+      - name: Create directory for kube
+        file:
+          path: "/home/ubuntu/.kube"
+          state: directory
+        become: no
+      
+      - name: Copy kube files
+        copy:
+          remote_src: yes
+          src: "/etc/kubernetes/admin.conf"
+          dest: "/home/ubuntu/.kube/config"
+      
+      - name: Change permissions
+        file:
+          path: "/home/ubuntu/.kube/config"
+          owner: "{{ ansible_user }}"
+          group: "{{ ansible_user }}"
+  
+      - name: Install calico network
+        shell:
+          cmd: "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml"
+        become: no
+
+    when: not kubeadm_initialized.stat.exists # Only execute the block if the cluster hasn't been previously initialized.
+
+  # Save join command for workers to join
+  - name: Generate and copy join command
+    block:
+      - name:  Generate join command
+        shell:
+          cmd: kubeadm token create --print-join-command
+        register: join_command
+
+      - name: Copy join command
+        delegate_to: localhost
+        copy:
+          content: "{{ join_command.stdout }}"
+          dest: "../join_command"
+        become: no
