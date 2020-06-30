@@ -7,12 +7,21 @@
   become: yes
 
   tasks:
-  - name: Copy the join command to server location
-    copy:
-      src: "../join_command"
-      dest: "/tmp/join_command.sh"
-      mode: 0777
+  - name: Check if kubeadm has already been initialized
+    stat:
+      path: "/etc/kubernetes/manifests/kube-apiserver.yaml"
+    register: kubeadm_initialized
+  
+  - name: Initialize and configure kubeadm
+    block:
+      - name: Copy the join command to server location
+        copy:
+          src: "../join_command"
+          dest: "/tmp/join_command.sh"
+          mode: 0777
 
-  - name: Join the node to cluster
-    shell:
-      cmd: "sh /tmp/join_command.sh"
+      - name: Join the node to cluster
+        shell:
+          cmd: "sh /tmp/join_command.sh"
+
+    when: not kubeadm_initialized.stat.exists # Only execute the block if the node hasn't previously join the cluster. For example, if we only change vCPU/RAM.
