@@ -110,8 +110,7 @@ resource "libvirt_domain" "VM_master" {
     autoport = true
   }
 
-  ## Ansible playbook.
-  # First, we need to wait for cloud-init to finish
+  # Wait for cloud-init to finish
   provisioner "remote-exec" {
     inline = [
       "cloud-init status --wait"
@@ -123,8 +122,19 @@ resource "libvirt_domain" "VM_master" {
     private_key = file(var.ssh_private_key)
     }
   }
+}
 
-  # Then, we execute ansible with an inline inventory
+resource "null_resource" "provision_master" {
+  
+  # Wait until master node is up
+  depends_on = [libvirt_domain.VM_master]
+
+  # Run it at each apply in order to get the new kubeadm join command
+  triggers = { 
+    timestamp = timestamp()
+  }
+
+  # Execute ansible with an inline inventory
   provisioner "local-exec" {
     command = "ansible-playbook -i '${var.prefix_ip}.${var.master_octet_ip},' --private-key ${var.ssh_private_key} ${path.module}/ansible/master/playbook.yaml"
     environment = {
@@ -133,7 +143,6 @@ resource "libvirt_domain" "VM_master" {
     }
   }
 }
-
 
 ######### Workers ##########
 
@@ -183,7 +192,7 @@ resource "libvirt_domain" "VM_worker" {
   count  = var.number_workers
   
   # Don't create the workers until the master is ready
-  depends_on = [libvirt_domain.VM_master]
+  depends_on = [null_resource.provision_master]
 
   name   = "${var.worker_hostname}-${count.index+1}"
   memory = var.worker_memory_mb
