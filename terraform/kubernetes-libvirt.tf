@@ -87,6 +87,7 @@ resource "libvirt_domain" "VM_master" {
   vcpu   = var.master_cpu
 
   qemu_agent = true
+  autostart = true
 
   network_interface {
     network_name = "kube"
@@ -199,6 +200,7 @@ resource "libvirt_domain" "VM_worker" {
   vcpu   = var.worker_cpu
 
   qemu_agent = true
+  autostart = true
 
   network_interface {
     network_name = "kube"
