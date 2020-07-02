@@ -9,7 +9,7 @@
   tasks:
   - name: Check if kubeadm has already been initialized
     stat:
-      path: "/etc/kubernetes/manifests/kube-apiserver.yaml"
+      path: "/etc/kubernetes/kubelet.conf"
     register: kubeadm_initialized
   
   - name: Initialize and configure kubeadm
