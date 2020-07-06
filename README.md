@@ -4,7 +4,7 @@ Stand and provision a virtual Kubernetes cluster with kubeadm and KVM virtual ma
 A Packer image is created as the base for installation (just for fun).
 
 
-### Requeriments
+### Requirements
 - Terraform (libvirt plugin)
 - Packer (optional)
 - Ansible
