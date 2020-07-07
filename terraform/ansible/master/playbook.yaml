@@ -40,7 +40,14 @@
         shell:
           cmd: "kubectl taint nodes ubuntu-master node-role.kubernetes.io/master-"
         become: no
-        
+
+      - name: Copy kubernetes config to controller
+        fetch:
+          src: "~/.kube/config"
+          dest: "~/.kube/config"
+          flat: yes
+        become: no
+
       - name: Install calico network
         shell:
           cmd: "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml"
