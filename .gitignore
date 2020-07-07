@@ -15,3 +15,7 @@ packer/packer_cache
 # Terraform artifacts
 terraform/.terraform
 *tfstate*
+*.plan
+
+# Local variables (Don't update repo on configuration change)
+terraform.tfvars

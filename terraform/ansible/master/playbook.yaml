@@ -36,6 +36,11 @@
           owner: "{{ ansible_user }}"
           group: "{{ ansible_user }}"
   
+      - name: Remove taint in master node
+        shell:
+          cmd: "kubectl taint nodes ubuntu-master node-role.kubernetes.io/master-"
+        become: no
+        
       - name: Install calico network
         shell:
           cmd: "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml"
